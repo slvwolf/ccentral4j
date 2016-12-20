@@ -3,7 +3,7 @@ package com.ccentral4j;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class SchemaItem {
+class SchemaItem {
   public String key;
   public String title;
   public String description;

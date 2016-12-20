@@ -1,6 +1,5 @@
 package com.ccentral4j;
 
-import junit.framework.TestCase;
 import mousio.etcd4j.EtcdClient;
 import mousio.etcd4j.requests.EtcdKeyPutRequest;
 import org.junit.Before;
@@ -11,16 +10,16 @@ import org.mockito.MockitoAnnotations;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.*;
 
-public class CCentralTest extends TestCase {
+public class CCentralTest {
 
-  private CCentral cCentral;
+  private CCClient cCentral;
   @Mock
   private EtcdClient client;
 
   @Before
   public void setUp() {
     MockitoAnnotations.initMocks(this);
-    cCentral = new CCentral("service", client);
+    cCentral = new CCEtcdClient("service", client);
     when(client.put(anyString(), anyString())).thenReturn(mock(EtcdKeyPutRequest.class));
   }
 
@@ -28,7 +27,7 @@ public class CCentralTest extends TestCase {
    * Schema is sent on first refresh
    */
   @Test
-  public void testSendSchema() throws Exception {
+  public void sendSchema() throws Exception {
     cCentral.refresh();
     verify(client).put("/ccentral/services/service/schema",
         "{\"v\":{\"key\":\"v\",\"title\":\"Version\",\"description\":\"Schema version for tracking instances\",\"type\":\"string\",\"default\":\"default\"}}");
