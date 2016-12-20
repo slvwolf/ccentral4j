@@ -1,10 +1,4 @@
-package com.ccentral4j.ccentral4j;
-
-import java.net.URI;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.UUID;
+package com.ccentral4j;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -13,11 +7,18 @@ import mousio.etcd4j.responses.EtcdKeysResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.URI;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.UUID;
+
 
 public class CCentral {
 
   private final static String CLIENT_VERSION = "java-0.1";
   private final static int CHECK_INTERVAL = 40;
+  private final static int INSTANCE_TTL = 3 * 60;
   private final static int TTL_DAY = 26 * 60 * 60;
   private final static String LOCATION_SERVICE_BASE = "/ccentral/services/%s";
   private final static String LOCATION_SCHEMA = LOCATION_SERVICE_BASE + "/schema";
@@ -63,7 +64,7 @@ public class CCentral {
 
   private void init(String serviceId, EtcdClient client) {
     LOG.info("Initializing");
-    this.startedEpoch = (int)(System.currentTimeMillis()/1000);
+    this.startedEpoch = (int) (System.currentTimeMillis() / 1000);
     this.serviceId = serviceId;
     this.client = client;
     schema = new HashMap<>();
@@ -229,11 +230,12 @@ public class CCentral {
       LOG.info("Pulling configuration");
       EtcdKeysResponse response = client.get(String.format(LOCATION_CONFIG, serviceId)).send().get();
       String data = response.node.value;
-      Map<String, Object> configMap = MAPPER.readValue(data, new TypeReference<Map<String, Object>>(){});
+      Map<String, Object> configMap = MAPPER.readValue(data, new TypeReference<Map<String, Object>>() {
+      });
       for (Map.Entry<String, Object> entry : configMap.entrySet()) {
         SchemaItem schemaItem = schema.get(entry.getKey());
         if (schemaItem != null) {
-          schemaItem.defaultValue = ((HashMap<String, Object>)(entry.getValue())).get("value").toString();
+          schemaItem.defaultValue = ((HashMap<String, Object>) (entry.getValue())).get("value").toString();
         }
       }
       LOG.info("Configuration pulled successfully");
@@ -246,7 +248,7 @@ public class CCentral {
 
   private void sendClientData() {
     LOG.info("Sending client data");
-    clientData.put("ts", Integer.toString((int)(System.currentTimeMillis() / 1000)));
+    clientData.put("ts", Integer.toString((int) (System.currentTimeMillis() / 1000)));
     try {
       clientData.put("v", getConfig("v"));
       clientData.put("cv", CLIENT_VERSION);
@@ -268,7 +270,7 @@ public class CCentral {
 
     try {
       String json = MAPPER.writeValueAsString(clientData);
-      client.put(String.format(LOCATION_CLIENTS, serviceId, clientId), json).ttl(2 * CHECK_INTERVAL).send();
+      client.put(String.format(LOCATION_CLIENTS, serviceId, clientId), json).ttl(INSTANCE_TTL).send();
     } catch (Exception e) {
       LOG.error("Failed to send client data: " + e.getMessage());
       e.printStackTrace();

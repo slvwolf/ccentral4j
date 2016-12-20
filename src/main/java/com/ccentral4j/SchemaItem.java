@@ -1,4 +1,4 @@
-package com.ccentral4j.ccentral4j;
+package com.ccentral4j;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;

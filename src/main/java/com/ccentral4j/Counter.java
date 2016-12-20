@@ -1,4 +1,4 @@
-package com.ccentral4j.ccentral4j;
+package com.ccentral4j;
 
 class Counter {
   private int last;
