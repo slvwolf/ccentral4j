@@ -61,6 +61,13 @@
         </plugins>
     </build>
 
+    <distributionManagement>
+        <repository>
+            <id>absolute directory</id>
+            <url>file:///tmp/mvn</url>
+        </repository>
+    </distributionManagement>
+
     <reporting>
         <plugins>
             <plugin>
