@@ -42,7 +42,14 @@ class CCEtcdClient implements CCClient {
   }
 
   public CCEtcdClient(String serviceId, URI[] hosts) {
-    LOG.info("Creating ETCD connection");
+    // TODO: Instead of throwing exception library should work in a dummy mode instead.
+    if (hosts == null || hosts.length == 0) {
+      LOG.error("No hosts provided or hosts is null. Can not initialize CCentral.");
+      throw new RuntimeException("No hosts provided or hosts is null. Can not initialize CCentral.");
+    }
+    for (URI host : hosts) {
+      LOG.info("Creating ETCD connection: %r", host.toASCIIString());
+    }
     EtcdClient cli = new EtcdClient(hosts);
     init(serviceId, cli);
   }
