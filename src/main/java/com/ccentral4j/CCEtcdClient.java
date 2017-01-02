@@ -16,7 +16,7 @@ import java.util.UUID;
 
 class CCEtcdClient implements CCClient {
 
-  private final static String CLIENT_VERSION = "java-0.0.2";
+  private final static String CLIENT_VERSION = "java-0.0.3";
   private final static int CHECK_INTERVAL = 40;
   private final static int INSTANCE_TTL = 3 * 60;
   private final static int TTL_DAY = 26 * 60 * 60;
@@ -38,7 +38,12 @@ class CCEtcdClient implements CCClient {
   private long lastCheck;
 
   public CCEtcdClient(String serviceId, EtcdClient client) {
-    init(serviceId, client);
+    try {
+      init(serviceId, client);
+    } catch (Throwable e) {
+      LOG.error("Could not initialise using provided EtcdClient", e);
+      throw e;
+    }
   }
 
   public CCEtcdClient(String serviceId, URI[] hosts) {
@@ -50,8 +55,13 @@ class CCEtcdClient implements CCClient {
     for (URI host : hosts) {
       LOG.info("Creating ETCD connection: %r", host.toASCIIString());
     }
-    EtcdClient cli = new EtcdClient(hosts);
-    init(serviceId, cli);
+    try {
+      EtcdClient cli = new EtcdClient(hosts);
+      init(serviceId, cli);
+    } catch (Throwable e) {
+      LOG.error("Could not initialise EtcdClient", e);
+      throw e;
+    }
   }
 
   @Override
@@ -166,9 +176,8 @@ class CCEtcdClient implements CCClient {
     key = filterKey(key);
     try {
       client.put(String.format(LOCATION_SERVICE_INFO, serviceId, key), data).ttl(TTL_DAY).send();
-    } catch (Exception e) {
-      LOG.error("Failed to add service info: " + e.getMessage());
-      e.printStackTrace();
+    } catch (Throwable e) {
+      LOG.error("Failed to add service info: " + e.getMessage(), e);
     }
   }
 
@@ -209,9 +218,8 @@ class CCEtcdClient implements CCClient {
       LOG.info("Sending schema information");
       String schemaJson = MAPPER.writeValueAsString(schema);
       client.put(String.format(LOCATION_SCHEMA, serviceId), schemaJson).send();
-    } catch (Exception e) {
-      LOG.error("Failed to send schema: " + e.getMessage());
-      e.printStackTrace();
+    } catch (Throwable e) {
+      LOG.error("Failed to send schema: " + e.getMessage(), e);
     }
   }
 
@@ -232,11 +240,9 @@ class CCEtcdClient implements CCClient {
         }
       }
       LOG.info("Configuration pulled successfully");
-    } catch (Exception e) {
-      LOG.error("Failed to pull configuration data: " + e.getMessage());
-      e.printStackTrace();
+    } catch (Throwable e) {
+      LOG.error("Failed to pull configuration data: " + e.getMessage(), e);
     }
-
   }
 
   private void sendClientData() {
@@ -261,9 +267,8 @@ class CCEtcdClient implements CCClient {
       String json = MAPPER.writeValueAsString(clientData);
       client.put(String.format(LOCATION_CLIENTS, serviceId, clientId), json).ttl(INSTANCE_TTL)
           .send();
-    } catch (Exception e) {
-      LOG.error("Failed to send client data: " + e.getMessage());
-      e.printStackTrace();
+    } catch (Throwable e) {
+      LOG.error("Failed to send client data: " + e.getMessage(), e);
     }
   }
 
