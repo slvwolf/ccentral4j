@@ -16,7 +16,7 @@ import java.util.UUID;
 
 class CCEtcdClient implements CCClient {
 
-  private final static String CLIENT_VERSION = "java-0.0.3";
+  private final static String CLIENT_VERSION = "java-0.0.4";
   private final static int CHECK_INTERVAL = 40;
   private final static int INSTANCE_TTL = 3 * 60;
   private final static int TTL_DAY = 26 * 60 * 60;
@@ -96,14 +96,20 @@ class CCEtcdClient implements CCClient {
 
   @Override
   public void addField(String key, String title, String description) {
-    key = filterKey(key);
-    schema.put(key, new SchemaItem(key, title, description, ""));
+    addField(key, title, description, "");
   }
 
   @Override
   public void addField(String key, String title, String description, String defaultValue) {
     key = filterKey(key);
     schema.put(key, new SchemaItem(key, title, description, defaultValue));
+    if (lastCheck > 0) {
+      LOG.warn("Schema was updated after refresh. This might result in some abnormal behavior on " +
+          "administration UI and degrades the performance. Before setting any stats or instance " +
+          "variables always make sure all configurations have been already defined. As a remedy " +
+          "will now resend the updated schema.");
+      sendSchema();
+    }
   }
 
 
@@ -226,12 +232,9 @@ class CCEtcdClient implements CCClient {
   private void pullConfigData() {
     try {
       LOG.info("Pulling configuration");
-      EtcdKeysResponse response = client.get(String.format(LOCATION_CONFIG, serviceId)).send()
-          .get();
+      EtcdKeysResponse response = client.get(String.format(LOCATION_CONFIG, serviceId)).send().get();
       String data = response.node.value;
-      Map<String, Object> configMap = MAPPER.readValue(data,
-          new TypeReference<Map<String, Object>>() {
-          });
+      Map<String, Object> configMap = MAPPER.readValue(data, new TypeReference<Map<String, Object>>() {});
       for (Map.Entry<String, Object> entry : configMap.entrySet()) {
         SchemaItem schemaItem = schema.get(entry.getKey());
         if (schemaItem != null) {
