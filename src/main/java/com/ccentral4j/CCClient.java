@@ -1,11 +1,83 @@
 package com.ccentral4j;
 
+import java.util.List;
+
 public interface CCClient {
+  /**
+   * Get unique clientId.
+   * @return Unique Id.
+   */
   String getClientId();
 
-  void addField(String key, String title, String description);
-
+  /**
+   * Add a string configuration field.
+   *
+   * @param key Unique ket for configuration.
+   * @param title (UI) Human readable title.
+   * @param description (UI) Documentation about the configuration.
+   * @param defaultValue Default value.
+   */
   void addField(String key, String title, String description, String defaultValue);
+
+  /**
+   * Add a integer configuration field.
+   *
+   * @param key Unique ket for configuration.
+   * @param title (UI) Human readable title.
+   * @param description (UI) Documentation about the configuration.
+   * @param defaultValue Default value.
+   */
+  void addIntField(String key, String title, String description, int defaultValue);
+
+  /**
+   * Add a float configuration field.
+   *
+   * @param key Unique ket for configuration.
+   * @param title (UI) Human readable title.
+   * @param description (UI) Documentation about the configuration.
+   * @param defaultValue Default value.
+   */
+
+  void addFloatField(String key, String title, String description, float defaultValue);
+
+  /**
+   * Add a password configuration field. This field will have its value hidden in the UI. This does
+   * not protect the password in any other way.
+   *
+   * @param key Unique ket for configuration.
+   * @param title (UI) Human readable title.
+   * @param description (UI) Documentation about the configuration.
+   * @param defaultValue Default value.
+   */
+  void addPasswordField(String key, String title, String description, String defaultValue);
+
+  /**
+   * Add a list configuration field.
+   *
+   * @param key Unique ket for configuration.
+   * @param title (UI) Human readable title.
+   * @param description (UI) Documentation about the configuration.
+   * @param defaultValue Default value.
+   */
+  void addListField(String key, String title, String description, List<String> defaultValue);
+
+  /**
+   * Add a boolean configuration field.
+   *
+   * @param key Unique ket for configuration.
+   * @param title (UI) Human readable title.
+   * @param description (UI) Documentation about the configuration.
+   * @param defaultValue Default value.
+   */
+  void addBooleanField(String key, String title, String description, boolean defaultValue);
+
+  /**
+   * Get list value from configuration.
+   *
+   * @param key Key for configuration.
+   * @return value or null if not found.
+   */
+  List<String> getConfigList(String key);
 
   /**
    * Get configuration.

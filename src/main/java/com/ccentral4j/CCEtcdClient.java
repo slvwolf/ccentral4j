@@ -1,5 +1,6 @@
 package com.ccentral4j;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import mousio.etcd4j.EtcdClient;
@@ -10,13 +11,14 @@ import org.slf4j.LoggerFactory;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 
 class CCEtcdClient implements CCClient {
 
-  private final static String CLIENT_VERSION = "java-0.0.4";
+  private final static String CLIENT_VERSION = "java-0.1.0";
   private final static int CHECK_INTERVAL = 40;
   private final static int INSTANCE_TTL = 3 * 60;
   private final static int TTL_DAY = 26 * 60 * 60;
@@ -26,7 +28,7 @@ class CCEtcdClient implements CCClient {
   private final static String LOCATION_CLIENTS = LOCATION_SERVICE_BASE + "/clients/%s";
   private final static String LOCATION_SERVICE_INFO = LOCATION_SERVICE_BASE + "/info/%s";
   private final static ObjectMapper MAPPER = new ObjectMapper();
-  private final static String API_VERSION = "0";
+  private final static String API_VERSION = "1";
   private static Logger LOG = LoggerFactory.getLogger(CCEtcdClient.class);
   private int startedEpoch;
   private HashMap<String, SchemaItem> schema;
@@ -88,21 +90,59 @@ class CCEtcdClient implements CCClient {
     schema = new HashMap<>();
     counters = new HashMap<>();
     clientData = new HashMap<>();
-    schema.put("v", new SchemaItem("v", "Version",
-        "Schema version for tracking instances", "default"));
+    addIntField("v", "Version", "Schema version for tracking instances", 0);
     clientId = UUID.randomUUID().toString();
     lastCheck = 0;
   }
 
   @Override
-  public void addField(String key, String title, String description) {
-    addField(key, title, description, "");
+  public void addField(String key, String title, String description, String defaultValue) {
+    addFieldType(key, title, description, defaultValue, SchemaItem.Type.STRING);
   }
 
   @Override
-  public void addField(String key, String title, String description, String defaultValue) {
+  public void addIntField(String key, String title, String description, int defaultValue) {
+    addFieldType(key, title, description, Integer.toString(defaultValue), SchemaItem.Type.INTEGER);
+  }
+
+  @Override
+  public void addFloatField(String key, String title, String description, float defaultValue) {
+    addFieldType(key, title, description, Float.toString(defaultValue), SchemaItem.Type.FLOAT);
+  }
+
+  @Override
+  public void addPasswordField(String key, String title, String description, String defaultValue) {
+    addFieldType(key, title, description, defaultValue, SchemaItem.Type.PASSWORD);
+  }
+
+  @Override
+  public void addListField(String key, String title, String description, List<String> defaultValue) {
+    try {
+      addFieldType(key, title, description, MAPPER.writeValueAsString(defaultValue), SchemaItem.Type.LIST);
+    } catch (JsonProcessingException e) {
+      LOG.error("Could not register list type: ", e);
+    }
+  }
+
+  @Override
+  public void addBooleanField(String key, String title, String description, boolean defaultValue) {
+    String value;
+    if (defaultValue) {
+      value = "1";
+    } else {
+      value = "0";
+    }
+    addFieldType(key, title, description, value, SchemaItem.Type.BOOLEAN);
+  }
+
+  @Override
+  public List<String> getConfigList(String key) {
+    return null;
+  }
+
+  private void addFieldType(String key, String title, String description, String defaultValue, SchemaItem.Type type) {
     key = filterKey(key);
-    schema.put(key, new SchemaItem(key, title, description, defaultValue));
+    schema.put(key, new SchemaItem(key, title, description, defaultValue, type));
     if (lastCheck > 0) {
       LOG.warn("Schema was updated after refresh. This might result in some abnormal behavior on " +
           "administration UI and degrades the performance. Before setting any stats or instance " +
@@ -111,7 +151,6 @@ class CCEtcdClient implements CCClient {
       sendSchema();
     }
   }
-
 
   @Override
   public String getConfig(String key) throws UnknownConfigException {

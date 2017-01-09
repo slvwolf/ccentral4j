@@ -13,12 +13,22 @@ class SchemaItem {
   @JsonIgnore
   public String configValue;
 
-  public SchemaItem(String key, String title, String description, String defaultValue) {
+  public enum Type {
+    STRING("string"), PASSWORD("password"), INTEGER("integer"), FLOAT("float"), LIST("list"), BOOLEAN("boolean");
+
+    private String value;
+
+    private Type(String type) {
+      value = type;
+    }
+  };
+
+  public SchemaItem(String key, String title, String description, String defaultValue, Type type) {
     this.key = key;
     this.title = title;
     this.description = description;
     this.defaultValue = defaultValue;
-    type = "string";
+    this.type = type.value;
     configValue = null;
   }
 
