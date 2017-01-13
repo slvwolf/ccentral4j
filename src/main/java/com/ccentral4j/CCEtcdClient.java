@@ -277,7 +277,7 @@ class CCEtcdClient implements CCClient {
       for (Map.Entry<String, Object> entry : configMap.entrySet()) {
         SchemaItem schemaItem = schema.get(entry.getKey());
         if (schemaItem != null) {
-          schemaItem.defaultValue = ((HashMap<String, Object>) (entry.getValue())).get("value")
+          schemaItem.configValue = ((HashMap<String, Object>) (entry.getValue())).get("value")
               .toString();
         }
       }
