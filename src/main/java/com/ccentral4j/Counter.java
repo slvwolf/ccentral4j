@@ -24,6 +24,11 @@ class Counter {
     current += amount;
   }
 
+  public void set(int amount) {
+    refresh();
+    current = amount;
+  }
+
   public int getValue() {
     refresh();
     return last;
