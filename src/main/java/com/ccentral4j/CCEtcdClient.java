@@ -258,6 +258,18 @@ class CCEtcdClient implements CCClient {
     incrementInstanceCounter(key, 1);
   }
 
+  @Override
+  public void setInstanceCounter(String key, int amount) {
+    refresh();
+    key = filterKey(key);
+    Counter counter = counters.get(key);
+    if (counter == null) {
+      counter = new Counter();
+      counters.put(key, counter);
+    }
+    counter.set(amount);
+  }
+
   private void sendSchema() {
     try {
       LOG.info("Sending schema information");

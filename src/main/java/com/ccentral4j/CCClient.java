@@ -130,5 +130,7 @@ public interface CCClient {
 
   void incrementInstanceCounter(String key);
 
+  void setInstanceCounter(String key, int amount);
+
   String getApiVersion();
 }
