@@ -30,6 +30,6 @@ public class CCentralTest {
   public void sendSchema() throws Exception {
     cCentral.refresh();
     verify(client).put("/ccentral/services/service/schema",
-        "{\"v\":{\"key\":\"v\",\"title\":\"Version\",\"description\":\"Schema version for tracking instances\",\"type\":\"string\",\"default\":\"default\"}}");
+        "{\"v\":{\"key\":\"v\",\"title\":\"Version\",\"description\":\"Schema version for tracking instances\",\"type\":\"integer\",\"default\":\"0\"}}");
   }
 }
