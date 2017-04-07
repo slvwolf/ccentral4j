@@ -1,13 +1,5 @@
 package com.ccentral4j;
 
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import mousio.etcd4j.EtcdClient;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.net.URI;
 import java.util.HashMap;
@@ -16,13 +8,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import mousio.etcd4j.EtcdClient;
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 class CCEtcdClient implements CCClient {
 
-  private final static String CLIENT_VERSION = "java-0.1.0";
-  private final static int CHECK_INTERVAL = 40;
-  private final static ObjectMapper MAPPER = new ObjectMapper();
-  private final static String API_VERSION = "1";
+  private static final String CLIENT_VERSION = "java-0.2.2";
+  private static final int CHECK_INTERVAL = 40;
+  private static final ObjectMapper MAPPER = new ObjectMapper();
+  private static final String API_VERSION = "1";
   private static Logger LOG = LoggerFactory.getLogger(CCEtcdClient.class);
   private int startedEpoch;
   private HashMap<String, SchemaItem> schema;
@@ -149,10 +149,10 @@ class CCEtcdClient implements CCClient {
     key = filterKey(key);
     schema.put(key, new SchemaItem(key, title, description, defaultValue, type));
     if (lastCheck > 0) {
-      LOG.warn("Schema was updated after refresh. This might result in some abnormal behavior on " +
-          "administration UI and degrades the performance. Before setting any stats or instance " +
-          "variables always make sure all configurations have been already defined. As a remedy " +
-          "will now resend the updated schema.");
+      LOG.warn("Schema was updated after refresh. This might result in some abnormal behavior on "
+              + "administration UI and degrades the performance. Before setting any stats or instance "
+              + "variables always make sure all configurations have been already defined. As a remedy "
+              + "will now resend the updated schema.");
       sendSchema();
     }
   }
