@@ -1,13 +1,14 @@
 package com.ccentral4j;
 
+import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import mousio.etcd4j.EtcdClient;
-import mousio.etcd4j.responses.EtcdKeysResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -20,28 +21,22 @@ class CCEtcdClient implements CCClient {
 
   private final static String CLIENT_VERSION = "java-0.1.0";
   private final static int CHECK_INTERVAL = 40;
-  private final static int INSTANCE_TTL = 3 * 60;
-  private final static int TTL_DAY = 26 * 60 * 60;
-  private final static String LOCATION_SERVICE_BASE = "/ccentral/services/%s";
-  private final static String LOCATION_SCHEMA = LOCATION_SERVICE_BASE + "/schema";
-  private final static String LOCATION_CONFIG = LOCATION_SERVICE_BASE + "/config";
-  private final static String LOCATION_CLIENTS = LOCATION_SERVICE_BASE + "/clients/%s";
-  private final static String LOCATION_SERVICE_INFO = LOCATION_SERVICE_BASE + "/info/%s";
   private final static ObjectMapper MAPPER = new ObjectMapper();
   private final static String API_VERSION = "1";
   private static Logger LOG = LoggerFactory.getLogger(CCEtcdClient.class);
   private int startedEpoch;
   private HashMap<String, SchemaItem> schema;
   private HashMap<String, Object> clientData;
-  private EtcdClient client;
-  private String serviceId;
+  private EtcdAccess client;
   private HashMap<String, Counter> counters;
   private String clientId;
   private long lastCheck;
 
-  public CCEtcdClient(String serviceId, EtcdClient client) {
+  public CCEtcdClient(EtcdAccess client) {
     try {
-      init(serviceId, client);
+      init();
+      this.client = client;
+      client.setClientId(this.getClientId());
     } catch (Throwable e) {
       LOG.error("Could not initialise using provided EtcdClient", e);
       throw e;
@@ -59,7 +54,8 @@ class CCEtcdClient implements CCClient {
     }
     try {
       EtcdClient cli = new EtcdClient(hosts);
-      init(serviceId, cli);
+      init();
+      this.client = new EtcdAccess(cli, serviceId, this.getClientId());
     } catch (Throwable e) {
       LOG.error("Could not initialise EtcdClient", e);
       throw e;
@@ -82,16 +78,14 @@ class CCEtcdClient implements CCClient {
     return key.replaceAll(validKeyChars, "");
   }
 
-  private void init(String serviceId, EtcdClient client) {
+  private void init() {
     LOG.info("Initializing");
+    clientId = UUID.randomUUID().toString();
     this.startedEpoch = (int) (System.currentTimeMillis() / 1000);
-    this.serviceId = serviceId;
-    this.client = client;
     schema = new HashMap<>();
     counters = new HashMap<>();
     clientData = new HashMap<>();
     addIntField("v", "Version", "Schema version for tracking instances", 0);
-    clientId = UUID.randomUUID().toString();
     lastCheck = 0;
   }
 
@@ -137,6 +131,17 @@ class CCEtcdClient implements CCClient {
 
   @Override
   public List<String> getConfigList(String key) {
+    try {
+      String value = getConfigString(key);
+      if (value == null) {
+        return null;
+      }
+      return MAPPER.readValue(value, new TypeReference<List<String>>() {});
+    } catch (JsonParseException e) {
+      LOG.warn("Could not parse configuration value. Value needs to be a valid json list of strings.");
+    } catch (IOException e) {
+      LOG.warn("Could not parse configuration value.", e);
+    }
     return null;
   }
 
@@ -220,7 +225,7 @@ class CCEtcdClient implements CCClient {
     refresh();
     key = filterKey(key);
     try {
-      client.put(String.format(LOCATION_SERVICE_INFO, serviceId, key), data).ttl(TTL_DAY).send();
+      client.sendServiceInfo(key, data);
     } catch (Throwable e) {
       LOG.error("Failed to add service info: " + e.getMessage(), e);
     }
@@ -274,7 +279,7 @@ class CCEtcdClient implements CCClient {
     try {
       LOG.info("Sending schema information");
       String schemaJson = MAPPER.writeValueAsString(schema);
-      client.put(String.format(LOCATION_SCHEMA, serviceId), schemaJson).send();
+      client.sendSchema(schemaJson);
     } catch (Throwable e) {
       LOG.error("Failed to send schema: " + e.getMessage(), e);
     }
@@ -283,8 +288,7 @@ class CCEtcdClient implements CCClient {
   private void pullConfigData() {
     try {
       LOG.info("Pulling configuration");
-      EtcdKeysResponse response = client.get(String.format(LOCATION_CONFIG, serviceId)).send().get();
-      String data = response.node.value;
+      String data = client.fetchConfig();
       Map<String, Object> configMap = MAPPER.readValue(data, new TypeReference<Map<String, Object>>() {});
       for (Map.Entry<String, Object> entry : configMap.entrySet()) {
         SchemaItem schemaItem = schema.get(entry.getKey());
@@ -319,8 +323,7 @@ class CCEtcdClient implements CCClient {
 
     try {
       String json = MAPPER.writeValueAsString(clientData);
-      client.put(String.format(LOCATION_CLIENTS, serviceId, clientId), json).ttl(INSTANCE_TTL)
-          .send();
+      client.sendClientInfo(json);
     } catch (Throwable e) {
       LOG.error("Failed to send client data: " + e.getMessage(), e);
     }

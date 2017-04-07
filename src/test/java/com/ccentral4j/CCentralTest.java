@@ -1,26 +1,27 @@
 package com.ccentral4j;
 
-import mousio.etcd4j.EtcdClient;
-import mousio.etcd4j.requests.EtcdKeyPutRequest;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import static org.mockito.Matchers.anyString;
+import java.util.Collections;
+import java.util.List;
+
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.*;
 
 public class CCentralTest {
 
   private CCClient cCentral;
   @Mock
-  private EtcdClient client;
+  private EtcdAccess client;
 
   @Before
-  public void setUp() {
+  public void setUp() throws Exception {
     MockitoAnnotations.initMocks(this);
-    cCentral = new CCEtcdClient("service", client);
-    when(client.put(anyString(), anyString())).thenReturn(mock(EtcdKeyPutRequest.class));
+    cCentral = new CCEtcdClient(client);
   }
 
   /**
@@ -29,7 +30,30 @@ public class CCentralTest {
   @Test
   public void sendSchema() throws Exception {
     cCentral.refresh();
-    verify(client).put("/ccentral/services/service/schema",
+    verify(client).sendSchema(
         "{\"v\":{\"key\":\"v\",\"title\":\"Version\",\"description\":\"Schema version for tracking instances\",\"type\":\"integer\",\"default\":\"0\"}}");
+  }
+
+  /** List types, get defaults */
+  @Test
+  public void getListDefault() throws Exception {
+    cCentral.addListField("list", "title", "description", Collections.singletonList("default"));
+
+    List<String> values = cCentral.getConfigList("list");
+
+    assertThat("Exactly one item in list", values.size(), is(1));
+    assertThat("Item should be 'default'", values.get(0), is("default"));
+  }
+
+  /** List types, get value */
+  @Test
+  public void getListValue() throws Exception {
+    when(client.fetchConfig()).thenReturn("{\"list\": {\"value\": \"[\\\"current\\\"]\"}}");
+    cCentral.addListField("list", "title", "description", Collections.singletonList("default"));
+
+    List<String> values = cCentral.getConfigList("list");
+
+    assertThat("Exactly one item in list", values.size(), is(1));
+    assertThat("Item should be 'current'", values.get(0), is("current"));
   }
 }
