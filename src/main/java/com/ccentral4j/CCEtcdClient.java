@@ -19,7 +19,7 @@ import org.slf4j.LoggerFactory;
 
 class CCEtcdClient implements CCClient {
 
-  private static final String CLIENT_VERSION = "java-0.2.2";
+  private static final String CLIENT_VERSION = "java-0.2.3";
   private static final int CHECK_INTERVAL = 40;
   private static final ObjectMapper MAPPER = new ObjectMapper();
   private static final String API_VERSION = "1";
@@ -185,7 +185,7 @@ class CCEtcdClient implements CCClient {
     try {
       return Integer.valueOf(getConfigString(key));
     } catch (NumberFormatException e) {
-      LOG.warn("Could not convert configuration %s value '%s' to int.",
+      LOG.warn("Could not convert configuration {} value '{}' to int.",
           key, getConfigString(key));
       return null;
     }
@@ -196,7 +196,7 @@ class CCEtcdClient implements CCClient {
     try {
       return Float.valueOf(getConfigString(key));
     } catch (NumberFormatException e) {
-      LOG.warn("Could not convert configuration %s value '%s' to float.",
+      LOG.warn("Could not convert configuration {} value '{}' to float.",
           key, getConfigString(key));
       return null;
     }
@@ -207,7 +207,7 @@ class CCEtcdClient implements CCClient {
     try {
       return getConfig(key);
     } catch (UnknownConfigException e) {
-      LOG.warn("Configuration %s was requested before initialized. Always introduce all " +
+      LOG.warn("Configuration {} was requested before initialized. Always introduce all " +
           "configurations with addField method before using them.");
       return null;
     }

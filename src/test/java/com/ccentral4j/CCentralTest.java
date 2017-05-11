@@ -56,4 +56,21 @@ public class CCentralTest {
     assertThat("Exactly one item in list", values.size(), is(1));
     assertThat("Item should be 'current'", values.get(0), is("current"));
   }
+
+  /** Bool types, get defaults */
+  @Test
+  public void getBoolDefault() throws Exception {
+    cCentral.addBooleanField("bool", "title", "description", false);
+
+    assertThat("Result should be false", cCentral.getConfigBool("bool"), is(false));
+  }
+
+  /** Bool types, get value */
+  @Test
+  public void getBoolValue() throws Exception {
+    when(client.fetchConfig()).thenReturn("{\"bool\": {\"value\": \"1\"}}");
+    cCentral.addBooleanField("bool", "title", "description", false);
+
+    assertThat("Result should be true", cCentral.getConfigBool("bool"), is(true));
+  }
 }

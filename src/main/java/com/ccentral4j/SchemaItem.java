@@ -21,7 +21,7 @@ class SchemaItem {
     private Type(String type) {
       value = type;
     }
-  };
+  }
 
   public SchemaItem(String key, String title, String description, String defaultValue, Type type) {
     this.key = key;
