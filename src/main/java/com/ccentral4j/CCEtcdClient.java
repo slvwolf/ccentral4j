@@ -2,20 +2,23 @@ package com.ccentral4j;
 
 import java.io.IOException;
 import java.net.URI;
+import java.time.Clock;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import mousio.etcd4j.EtcdClient;
+import com.codahale.metrics.ExponentiallyDecayingReservoir;
+import com.codahale.metrics.Histogram;
+import com.codahale.metrics.Snapshot;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import mousio.etcd4j.EtcdClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 class CCEtcdClient implements CCClient {
 
@@ -24,11 +27,13 @@ class CCEtcdClient implements CCClient {
   private static final ObjectMapper MAPPER = new ObjectMapper();
   private static final String API_VERSION = "1";
   private static Logger LOG = LoggerFactory.getLogger(CCEtcdClient.class);
+  private Clock clock;
   private int startedEpoch;
   private HashMap<String, SchemaItem> schema;
   private HashMap<String, Object> clientData;
   private EtcdAccess client;
   private HashMap<String, Counter> counters;
+  private HashMap<String, Histogram> histograms;
   private String clientId;
   private long lastCheck;
 
@@ -62,6 +67,14 @@ class CCEtcdClient implements CCClient {
     }
   }
 
+  Clock getClock() {
+    return clock;
+  }
+
+  void setClock(Clock clock) {
+    this.clock = clock;
+  }
+
   @Override
   public String getApiVersion() {
     return API_VERSION;
@@ -80,10 +93,12 @@ class CCEtcdClient implements CCClient {
 
   private void init() {
     LOG.info("Initializing");
+    clock = Clock.systemUTC();
     clientId = UUID.randomUUID().toString();
-    this.startedEpoch = (int) (System.currentTimeMillis() / 1000);
+    this.startedEpoch = (int) (clock.millis() / 1000);
     schema = new HashMap<>();
     counters = new HashMap<>();
+    histograms = new HashMap<>();
     clientData = new HashMap<>();
     addIntField("v", "Version", "Schema version for tracking instances", 0);
     lastCheck = 0;
@@ -238,9 +253,9 @@ class CCEtcdClient implements CCClient {
       sendSchema();
       LOG.debug("Schema updated");
     }
-    if (lastCheck < (System.currentTimeMillis() - CHECK_INTERVAL * 1000)) {
+    if (lastCheck < (clock.millis() - CHECK_INTERVAL * 1000)) {
       LOG.info("Check interval triggered");
-      lastCheck = System.currentTimeMillis();
+      lastCheck = clock.millis();
       sendClientData();
       pullConfigData();
     }
@@ -275,6 +290,18 @@ class CCEtcdClient implements CCClient {
     counter.set(amount);
   }
 
+  @Override
+  public void addHistogram(String key, long timeInMilliseconds) {
+    refresh();
+    Histogram histogram = histograms.get(key);
+    if (histogram == null) {
+      histogram = new Histogram(new ExponentiallyDecayingReservoir());
+      histograms.put(key, histogram);
+    }
+    histogram.update(timeInMilliseconds);
+  }
+
+
   private void sendSchema() {
     try {
       LOG.info("Sending schema information");
@@ -305,7 +332,7 @@ class CCEtcdClient implements CCClient {
 
   private void sendClientData() {
     LOG.info("Sending client data");
-    clientData.put("ts", Integer.toString((int) (System.currentTimeMillis() / 1000)));
+    clientData.put("ts", Integer.toString((int) (clock.millis() / 1000)));
     String configVersion = getConfigString("v");
     clientData.put("v", configVersion == null ? "unknown" : configVersion);
     clientData.put("cv", CLIENT_VERSION);
@@ -319,6 +346,16 @@ class CCEtcdClient implements CCClient {
       LinkedList<Integer> counts = new LinkedList<>();
       counts.add(entry.getValue().getValue());
       clientData.put("c_" + entry.getKey(), counts);
+    }
+
+    for (Map.Entry<String, Histogram> entry : histograms.entrySet()) {
+      Snapshot snapshot = entry.getValue().getSnapshot();
+      LinkedList<Double> percentiles = new LinkedList<>();
+      percentiles.add(snapshot.get75thPercentile());
+      percentiles.add(snapshot.get95thPercentile());
+      percentiles.add(snapshot.get99thPercentile());
+      percentiles.add(snapshot.getMedian());
+      clientData.put("h_" + entry.getKey(), percentiles);
     }
 
     try {
