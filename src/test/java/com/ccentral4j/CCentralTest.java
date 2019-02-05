@@ -1,18 +1,30 @@
 package com.ccentral4j;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import java.io.IOException;
+import java.time.Clock;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
+import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class CCentralTest {
+  private static final ObjectMapper MAPPER = new ObjectMapper();
 
   private CCClient cCentral;
   @Mock
@@ -72,5 +84,23 @@ public class CCentralTest {
     cCentral.addBooleanField("bool", "title", "description", false);
 
     assertThat("Result should be true", cCentral.getConfigBool("bool"), is(true));
+  }
+
+  @Test
+  public void histogram() throws IOException {
+    cCentral.addHistogram("latency", 10);
+    cCentral.addHistogram("latency", 12);
+    cCentral.addHistogram("latency", 7);
+    ((CCEtcdClient) cCentral).setClock(Clock.offset(((CCEtcdClient) cCentral).getClock(), Duration.ofMinutes(1)));
+    cCentral.refresh();
+    ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
+    verify(client, times(2)).sendClientInfo(captor.capture());
+    String data = captor.getAllValues().get(1);
+    Map<String, Object> values = MAPPER.readValue(data, new TypeReference<Map<String, Object>>() {
+    });
+    @SuppressWarnings("unchecked")
+    List<Double> latencies = (List) values.get("h_latency");
+    assertThat(latencies, notNullValue());
+    assertThat(latencies, hasItems(12.0, 12.0, 12.0, 10.0));
   }
 }

@@ -132,5 +132,7 @@ public interface CCClient {
 
   void setInstanceCounter(String key, int amount);
 
+  void addHistogram(String key, long timeInMilliseconds);
+
   String getApiVersion();
 }
