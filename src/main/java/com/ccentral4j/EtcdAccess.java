@@ -48,8 +48,8 @@ public class EtcdAccess {
     return response.node.value;
   }
 
-  public void sendSchema(String schemaJson) throws IOException {
-    client.put(String.format(LOCATION_SCHEMA, serviceId), schemaJson).send();
+  public void sendSchema(String schemaJson) throws IOException, EtcdAuthenticationException, TimeoutException, EtcdException {
+    client.put(String.format(LOCATION_SCHEMA, serviceId), schemaJson).send().get();
   }
 
   public void sendServiceInfo(String key, String data) throws IOException {
