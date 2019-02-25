@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
 
 class CCEtcdClient implements CCClient {
 
-  private static final String CLIENT_VERSION = "java-0.3.1";
+  private static final String CLIENT_VERSION = "java-0.3.2";
   private static final int CHECK_INTERVAL = 40;
   private static final ObjectMapper MAPPER = new ObjectMapper();
   private static final String API_VERSION = "1";
@@ -169,6 +169,7 @@ class CCEtcdClient implements CCClient {
               + "variables always make sure all configurations have been already defined. As a remedy "
               + "will now resend the updated schema.");
       sendSchema();
+      pullConfigData();
     }
   }
 
@@ -261,8 +262,7 @@ class CCEtcdClient implements CCClient {
     }
   }
 
-  @Override
-  public void incrementInstanceCounter(String key, int amount) {
+  private Counter getCounter(String key) {
     refresh();
     key = filterKey(key);
     Counter counter = counters.get(key);
@@ -270,7 +270,12 @@ class CCEtcdClient implements CCClient {
       counter = new Counter();
       counters.put(key, counter);
     }
-    counter.increment(amount);
+    return counter;
+  }
+
+  @Override
+  public void incrementInstanceCounter(String key, int amount) {
+    getCounter(key).increment(amount);
   }
 
   @Override
@@ -280,14 +285,7 @@ class CCEtcdClient implements CCClient {
 
   @Override
   public void setInstanceCounter(String key, int amount) {
-    refresh();
-    key = filterKey(key);
-    Counter counter = counters.get(key);
-    if (counter == null) {
-      counter = new Counter();
-      counters.put(key, counter);
-    }
-    counter.set(amount);
+    getCounter(key).set(amount);
   }
 
   @Override
