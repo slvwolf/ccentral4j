@@ -312,17 +312,27 @@ class CCEtcdClient implements CCClient {
 
   private void pullConfigData() {
     try {
-      LOG.info("Pulling configuration");
+      LOG.info("Checking configuration changes");
       String data = client.fetchConfig();
       Map<String, Object> configMap = MAPPER.readValue(data, new TypeReference<Map<String, Object>>() {});
       for (Map.Entry<String, Object> entry : configMap.entrySet()) {
         SchemaItem schemaItem = schema.get(entry.getKey());
         if (schemaItem != null) {
-          schemaItem.configValue = ((HashMap<String, Object>) (entry.getValue())).get("value")
-              .toString();
+          String newValue = ((HashMap<String, Object>) (entry.getValue())).get("value").toString();
+          // Value changed
+          if (schemaItem.configValue == null || !schemaItem.configValue.equals(newValue)) {
+            String oldValue = schemaItem.configValue == null ? schemaItem.defaultValue : schemaItem.configValue;
+            schemaItem.configValue = newValue;
+            if (schemaItem.type.equals(SchemaItem.Type.PASSWORD.name())) {
+              LOG.info("Configuration value for '" + schemaItem.key + "' changed.");
+            } else {
+              LOG.info("Configuration value for " + schemaItem.key +
+                      " changed (" + oldValue + " => " + newValue + " )");
+            }
+          }
         }
       }
-      LOG.info("Configuration pulled successfully");
+      LOG.debug("Configuration pulled successfully");
     } catch (Throwable e) {
       LOG.error("Failed to pull configuration data: " + e.getMessage(), e);
     }

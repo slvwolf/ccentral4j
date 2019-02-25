@@ -18,7 +18,7 @@ class SchemaItem {
 
     private String value;
 
-    private Type(String type) {
+    Type(String type) {
       value = type;
     }
   }
