@@ -2,6 +2,8 @@ package com.ccentral4j;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import mousio.etcd4j.responses.EtcdAuthenticationException;
+import mousio.etcd4j.responses.EtcdException;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -14,14 +16,13 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeoutException;
 
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 public class CCentralTest {
   private static final ObjectMapper MAPPER = new ObjectMapper();
@@ -84,6 +85,17 @@ public class CCentralTest {
     cCentral.addBooleanField("bool", "title", "description", false);
 
     assertThat("Result should be true", cCentral.getConfigBool("bool"), is(true));
+  }
+
+  /** Pull configuration on late field definitions */
+  @Test
+  public void pullConfigLate() throws EtcdAuthenticationException, TimeoutException, EtcdException, IOException {
+    cCentral.addField("key", "title", "desc", "def");
+    cCentral.refresh();
+    reset(client);
+
+    cCentral.addField("key2", "title", "desc", "def");
+    verify(client).fetchConfig();
   }
 
   @Test
