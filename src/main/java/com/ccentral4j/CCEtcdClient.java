@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
 
 class CCEtcdClient implements CCClient {
 
-  private static final String CLIENT_VERSION = "java-0.3.2";
+  private static final String CLIENT_VERSION = "java-0.3.3";
   private static final int CHECK_INTERVAL = 40;
   private static final ObjectMapper MAPPER = new ObjectMapper();
   private static final String API_VERSION = "1";
@@ -242,7 +242,7 @@ class CCEtcdClient implements CCClient {
     key = filterKey(key);
     try {
       client.sendServiceInfo(key, data);
-    } catch (Throwable e) {
+    } catch (Exception e) {
       LOG.error("Failed to add service info: " + e.getMessage(), e);
     }
   }
@@ -305,7 +305,7 @@ class CCEtcdClient implements CCClient {
       LOG.info("Sending schema information");
       String schemaJson = MAPPER.writeValueAsString(schema);
       client.sendSchema(schemaJson);
-    } catch (Throwable e) {
+    } catch (Exception e) {
       LOG.error("Failed to send schema: " + e.getMessage(), e);
     }
   }
@@ -317,23 +317,24 @@ class CCEtcdClient implements CCClient {
       Map<String, Object> configMap = MAPPER.readValue(data, new TypeReference<Map<String, Object>>() {});
       for (Map.Entry<String, Object> entry : configMap.entrySet()) {
         SchemaItem schemaItem = schema.get(entry.getKey());
-        if (schemaItem != null) {
-          String newValue = ((HashMap<String, Object>) (entry.getValue())).get("value").toString();
-          // Value changed
-          if (schemaItem.configValue == null || !schemaItem.configValue.equals(newValue)) {
-            String oldValue = schemaItem.configValue == null ? schemaItem.defaultValue : schemaItem.configValue;
-            schemaItem.configValue = newValue;
-            if (schemaItem.type.equals(SchemaItem.Type.PASSWORD.name())) {
-              LOG.info("Configuration value for '" + schemaItem.key + "' changed.");
-            } else {
-              LOG.info("Configuration value for " + schemaItem.key +
-                      " changed (" + oldValue + " => " + newValue + " )");
-            }
+        if (schemaItem == null) {
+          continue;
+        }
+        @SuppressWarnings("unchecked")
+        String newValue = ((HashMap<String, Object>) (entry.getValue())).get("value").toString();
+        // Value changed
+        if (schemaItem.configValue == null || !schemaItem.configValue.equals(newValue)) {
+          String oldValue = schemaItem.configValue == null ? schemaItem.defaultValue : schemaItem.configValue;
+          schemaItem.configValue = newValue;
+          if (schemaItem.type.equals(SchemaItem.Type.PASSWORD.name())) {
+            LOG.info("Configuration value for '{}' changed.", schemaItem.key);
+          } else {
+            LOG.info("Configuration value for {} changed ({} => {})", schemaItem.key, oldValue, newValue);
           }
         }
       }
       LOG.debug("Configuration pulled successfully");
-    } catch (Throwable e) {
+    } catch (Exception e) {
       LOG.error("Failed to pull configuration data: " + e.getMessage(), e);
     }
   }
@@ -369,7 +370,7 @@ class CCEtcdClient implements CCClient {
     try {
       String json = MAPPER.writeValueAsString(clientData);
       client.sendClientInfo(json);
-    } catch (Throwable e) {
+    } catch (Exception e) {
       LOG.error("Failed to send client data: " + e.getMessage(), e);
     }
   }
