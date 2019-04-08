@@ -99,7 +99,7 @@ public class CCentralTest {
   }
 
   @Test
-  public void histogram() throws IOException {
+  public void histogram() throws EtcdAuthenticationException, TimeoutException, EtcdException, IOException {
     cCentral.addHistogram("latency", 10);
     cCentral.addHistogram("latency", 12);
     cCentral.addHistogram("latency", 7);
