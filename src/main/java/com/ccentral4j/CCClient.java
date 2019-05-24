@@ -126,11 +126,28 @@ public interface CCClient {
 
   void refresh();
 
-  void incrementInstanceCounter(String key, int amount);
+  /**
+   * Increment instance counter
+   * @param key Counter key
+   * @param amount Amount to increment
+   * @param groups Additional groups for this key
+   */
+  void incrementInstanceCounter(String key, int amount, String ...groups);
 
-  void incrementInstanceCounter(String key);
+  /**
+   * Increment instance counter. Groups are optional and will create additional dimensions for that metric.
+   * @param key Counter key
+   * @param groups Additional groups for this key
+   */
+  void incrementInstanceCounter(String key, String ...groups);
 
-  void setInstanceCounter(String key, int amount);
+  /**
+   * Reset instance counter to predefined value
+   * @param key Counter key
+   * @param amount Value to set
+   * @param groups Additional groups for this key
+   */
+  void setInstanceCounter(String key, int amount, String ...groups);
 
   void addHistogram(String key, long timeInMilliseconds);
 
