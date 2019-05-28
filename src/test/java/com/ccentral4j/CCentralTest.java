@@ -113,6 +113,16 @@ public class CCentralTest {
     assertTrue(stringCaptor.getValue().contains("\"c_key.group1.group2\":[0]"));
   }
 
+  /** Group parameters are cleaned */
+  @Test
+  public void cleanGroups() throws Exception {
+    cCentral.incrementInstanceCounter("key", "invalid.character", "second character");
+    cCentral.refresh();
+
+    verify(client).sendClientInfo(stringCaptor.capture());
+    assertTrue(stringCaptor.getValue().contains("\"c_key.invalidcharacter.second_character\":[0]"));
+  }
+
   /** Increment without groups */
   @Test
   public void incNoGroups() throws Exception {
