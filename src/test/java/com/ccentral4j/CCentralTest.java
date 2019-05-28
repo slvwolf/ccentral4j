@@ -110,7 +110,17 @@ public class CCentralTest {
     cCentral.refresh();
 
     verify(client).sendClientInfo(stringCaptor.capture());
-    assertTrue(stringCaptor.getValue().contains("c_key.group1.group2"));
+    assertTrue(stringCaptor.getValue().contains("\"c_key.group1.group2\":[0]"));
+  }
+
+  /** Increment without groups */
+  @Test
+  public void incNoGroups() throws Exception {
+    cCentral.incrementInstanceCounter("key");
+    cCentral.refresh();
+
+    verify(client).sendClientInfo(stringCaptor.capture());
+    assertTrue(stringCaptor.getValue().contains("\"c_key\":[0]"));
   }
 
   @Test
