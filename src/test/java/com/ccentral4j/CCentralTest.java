@@ -7,6 +7,7 @@ import mousio.etcd4j.responses.EtcdException;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
@@ -18,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
+import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -31,8 +33,11 @@ public class CCentralTest {
   @Mock
   private EtcdAccess client;
 
+  @Captor
+  private ArgumentCaptor<String> stringCaptor;
+
   @Before
-  public void setUp() throws Exception {
+  public void setUp() {
     MockitoAnnotations.initMocks(this);
     cCentral = new CCEtcdClient(client);
   }
@@ -49,7 +54,7 @@ public class CCentralTest {
 
   /** List types, get defaults */
   @Test
-  public void getListDefault() throws Exception {
+  public void getListDefault() {
     cCentral.addListField("list", "title", "description", Collections.singletonList("default"));
 
     List<String> values = cCentral.getConfigList("list");
@@ -72,7 +77,7 @@ public class CCentralTest {
 
   /** Bool types, get defaults */
   @Test
-  public void getBoolDefault() throws Exception {
+  public void getBoolDefault() {
     cCentral.addBooleanField("bool", "title", "description", false);
 
     assertThat("Result should be false", cCentral.getConfigBool("bool"), is(false));
@@ -96,6 +101,36 @@ public class CCentralTest {
 
     cCentral.addField("key2", "title", "desc", "def");
     verify(client).fetchConfig();
+  }
+
+  /** Increment with groups */
+  @Test
+  public void incGroups() throws Exception {
+    cCentral.incrementInstanceCounter("key", "group1", "group2");
+    cCentral.refresh();
+
+    verify(client).sendClientInfo(stringCaptor.capture());
+    assertTrue(stringCaptor.getValue().contains("\"c_key.group1.group2\":[0]"));
+  }
+
+  /** Group parameters are cleaned */
+  @Test
+  public void cleanGroups() throws Exception {
+    cCentral.incrementInstanceCounter("key", "invalid.character", "second character");
+    cCentral.refresh();
+
+    verify(client).sendClientInfo(stringCaptor.capture());
+    assertTrue(stringCaptor.getValue().contains("\"c_key.invalidcharacter.second_character\":[0]"));
+  }
+
+  /** Increment without groups */
+  @Test
+  public void incNoGroups() throws Exception {
+    cCentral.incrementInstanceCounter("key");
+    cCentral.refresh();
+
+    verify(client).sendClientInfo(stringCaptor.capture());
+    assertTrue(stringCaptor.getValue().contains("\"c_key\":[0]"));
   }
 
   @Test

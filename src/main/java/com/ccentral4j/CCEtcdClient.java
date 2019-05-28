@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
 
 class CCEtcdClient implements CCClient {
 
-  private static final String CLIENT_VERSION = "java-0.3.3";
+  private static final String CLIENT_VERSION = "java-0.4.0";
   private static final int CHECK_INTERVAL = 40;
   private static final ObjectMapper MAPPER = new ObjectMapper();
   private static final String API_VERSION = "1";
@@ -262,9 +262,17 @@ class CCEtcdClient implements CCClient {
     }
   }
 
-  private Counter getCounter(String key) {
-    refresh();
-    key = filterKey(key);
+  private Counter getCounter(String key, String ...groups) {
+    if (groups.length > 0) {
+      StringBuilder b = new StringBuilder(filterKey(key));
+      for (String group : groups) {
+        b.append(".");
+        b.append(filterKey(group));
+      }
+      key = b.toString();
+    } else {
+      key = filterKey(key);
+    }
     Counter counter = counters.get(key);
     if (counter == null) {
       counter = new Counter();
@@ -274,18 +282,21 @@ class CCEtcdClient implements CCClient {
   }
 
   @Override
-  public void incrementInstanceCounter(String key, int amount) {
-    getCounter(key).increment(amount);
+  public void incrementInstanceCounter(String key, int amount, String... groups) {
+    getCounter(key, groups).increment(amount);
+    refresh();
   }
 
   @Override
-  public void incrementInstanceCounter(String key) {
-    incrementInstanceCounter(key, 1);
+  public void incrementInstanceCounter(String key, String... groups) {
+    getCounter(key, groups).increment(1);
+    refresh();
   }
 
   @Override
-  public void setInstanceCounter(String key, int amount) {
-    getCounter(key).set(amount);
+  public void setInstanceCounter(String key, int amount, String... groups) {
+    getCounter(key, groups).set(amount);
+    refresh();
   }
 
   @Override
