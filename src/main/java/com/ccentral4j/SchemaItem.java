@@ -16,7 +16,7 @@ class SchemaItem {
   public enum Type {
     STRING("string"), PASSWORD("password"), INTEGER("integer"), FLOAT("float"), LIST("list"), BOOLEAN("boolean");
 
-    private String value;
+    private final String value;
 
     Type(String type) {
       value = type;
