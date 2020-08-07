@@ -22,16 +22,16 @@ import org.slf4j.LoggerFactory;
 
 class CCEtcdClient implements CCClient {
 
-  private static final String CLIENT_VERSION = "java-0.4.0";
+  private static final String CLIENT_VERSION = "java-0.4.1";
   private static final int CHECK_INTERVAL = 40;
   private static final ObjectMapper MAPPER = new ObjectMapper();
   private static final String API_VERSION = "1";
-  private static Logger LOG = LoggerFactory.getLogger(CCEtcdClient.class);
+  private static final Logger LOG = LoggerFactory.getLogger(CCEtcdClient.class);
   private Clock clock;
   private int startedEpoch;
   private HashMap<String, SchemaItem> schema;
   private HashMap<String, Object> clientData;
-  private EtcdAccess client;
+  private final EtcdAccess client;
   private HashMap<String, Counter> counters;
   private HashMap<String, Histogram> histograms;
   private String clientId;
@@ -55,7 +55,7 @@ class CCEtcdClient implements CCClient {
       throw new RuntimeException("No hosts provided or hosts is null. Can not initialize CCentral.");
     }
     for (URI host : hosts) {
-      LOG.info("Creating ETCD connection: %r", host.toASCIIString());
+      LOG.info("Creating ETCD connection: {}", host.toASCIIString());
     }
     try {
       EtcdClient cli = new EtcdClient(hosts);
@@ -224,7 +224,7 @@ class CCEtcdClient implements CCClient {
       return getConfig(key);
     } catch (UnknownConfigException e) {
       LOG.warn("Configuration {} was requested before initialized. Always introduce all " +
-          "configurations with addField method before using them.");
+              "configurations with addField method before using them.", key);
       return null;
     }
   }
@@ -255,7 +255,7 @@ class CCEtcdClient implements CCClient {
       LOG.debug("Schema updated");
     }
     if (lastCheck < (clock.millis() - CHECK_INTERVAL * 1000)) {
-      LOG.info("Check interval triggered");
+      LOG.debug("Check interval triggered");
       lastCheck = clock.millis();
       sendClientData();
       pullConfigData();
