@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory;
 
 class CCEtcdClient implements CCClient {
 
-  private static final String CLIENT_VERSION = "java-0.4.1";
+  private static final String CLIENT_VERSION = "java-0.4.2";
   private static final int CHECK_INTERVAL = 40;
   private static final ObjectMapper MAPPER = new ObjectMapper();
   private static final String API_VERSION = "1";
