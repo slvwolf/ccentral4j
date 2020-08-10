@@ -6,7 +6,7 @@
     <groupId>com.ccentral4j</groupId>
     <artifactId>ccentral</artifactId>
     <!-- Remember to increment version number in class as well -->
-    <version>0.4.1</version>
+    <version>0.4.2</version>
     <packaging>jar</packaging>
 
     <name>ccentral</name>
