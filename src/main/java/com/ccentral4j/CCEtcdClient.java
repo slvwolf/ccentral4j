@@ -26,12 +26,12 @@ class CCEtcdClient implements CCClient {
   private static final int CHECK_INTERVAL = 40;
   private static final ObjectMapper MAPPER = new ObjectMapper();
   private static final String API_VERSION = "1";
-  private static final Logger LOG = LoggerFactory.getLogger(CCEtcdClient.class);
+  private static Logger LOG = LoggerFactory.getLogger(CCEtcdClient.class);
+  private final EtcdAccess client;
   private Clock clock;
   private int startedEpoch;
   private HashMap<String, SchemaItem> schema;
   private HashMap<String, Object> clientData;
-  private final EtcdAccess client;
   private HashMap<String, Counter> counters;
   private HashMap<String, Histogram> histograms;
   private String clientId;
@@ -65,6 +65,10 @@ class CCEtcdClient implements CCClient {
       LOG.error("Could not initialise EtcdClient", e);
       throw e;
     }
+  }
+
+  public static void setLogger(Logger logger) {
+    CCEtcdClient.LOG = logger;
   }
 
   Clock getClock() {
@@ -151,7 +155,8 @@ class CCEtcdClient implements CCClient {
       if (value == null) {
         return null;
       }
-      return MAPPER.readValue(value, new TypeReference<List<String>>() {});
+      return MAPPER.readValue(value, new TypeReference<List<String>>() {
+      });
     } catch (JsonParseException e) {
       LOG.warn("Could not parse configuration value. Value needs to be a valid json list of strings.");
     } catch (IOException e) {
@@ -202,7 +207,7 @@ class CCEtcdClient implements CCClient {
       return Integer.valueOf(getConfigString(key));
     } catch (NumberFormatException e) {
       LOG.warn("Could not convert configuration {} value '{}' to int.",
-          key, getConfigString(key));
+              key, getConfigString(key));
       return null;
     }
   }
@@ -213,7 +218,7 @@ class CCEtcdClient implements CCClient {
       return Float.valueOf(getConfigString(key));
     } catch (NumberFormatException e) {
       LOG.warn("Could not convert configuration {} value '{}' to float.",
-          key, getConfigString(key));
+              key, getConfigString(key));
       return null;
     }
   }
@@ -262,7 +267,7 @@ class CCEtcdClient implements CCClient {
     }
   }
 
-  private Counter getCounter(String key, String ...groups) {
+  private Counter getCounter(String key, String... groups) {
     if (groups.length > 0) {
       StringBuilder b = new StringBuilder(filterKey(key));
       for (String group : groups) {
@@ -325,7 +330,8 @@ class CCEtcdClient implements CCClient {
     try {
       LOG.info("Checking configuration changes");
       String data = client.fetchConfig();
-      Map<String, Object> configMap = MAPPER.readValue(data, new TypeReference<Map<String, Object>>() {});
+      Map<String, Object> configMap = MAPPER.readValue(data, new TypeReference<Map<String, Object>>() {
+      });
       for (Map.Entry<String, Object> entry : configMap.entrySet()) {
         SchemaItem schemaItem = schema.get(entry.getKey());
         if (schemaItem == null) {
@@ -337,7 +343,7 @@ class CCEtcdClient implements CCClient {
         if (schemaItem.configValue == null || !schemaItem.configValue.equals(newValue)) {
           String oldValue = schemaItem.configValue == null ? schemaItem.defaultValue : schemaItem.configValue;
           schemaItem.configValue = newValue;
-          if (schemaItem.type.equals(SchemaItem.Type.PASSWORD.name())) {
+          if (schemaItem.type.equalsIgnoreCase(SchemaItem.Type.PASSWORD.value)) {
             LOG.info("Configuration value for '{}' changed.", schemaItem.key);
           } else {
             LOG.info("Configuration value for {} changed ({} => {})", schemaItem.key, oldValue, newValue);

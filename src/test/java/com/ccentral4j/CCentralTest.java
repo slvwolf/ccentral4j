@@ -25,14 +25,16 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.*;
+import org.slf4j.Logger;
 
 public class CCentralTest {
   private static final ObjectMapper MAPPER = new ObjectMapper();
 
-  private CCClient cCentral;
+  private CCEtcdClient cCentral;
   @Mock
   private EtcdAccess client;
-
+  @Mock
+  private Logger logger;
   @Captor
   private ArgumentCaptor<String> stringCaptor;
 
@@ -83,7 +85,9 @@ public class CCentralTest {
     assertThat("Result should be false", cCentral.getConfigBool("bool"), is(false));
   }
 
-  /** Bool types, get value */
+  /**
+   * Bool types, get value
+   */
   @Test
   public void getBoolValue() throws Exception {
     when(client.fetchConfig()).thenReturn("{\"bool\": {\"value\": \"1\"}}");
@@ -92,7 +96,23 @@ public class CCentralTest {
     assertThat("Result should be true", cCentral.getConfigBool("bool"), is(true));
   }
 
-  /** Pull configuration on late field definitions */
+  /**
+   * Password types, do not log password (verify correct branch)
+   */
+  @Test
+  public void getPasswordValue() throws Exception {
+    when(client.fetchConfig()).thenReturn("{\"password_title\": {\"value\": \"pass2\"}}");
+    CCEtcdClient.setLogger(logger);
+    cCentral.addPasswordField("password_title", "title", "description", "pass1");
+
+    cCentral.refresh();
+
+    verify(logger).info(eq("Configuration value for '{}' changed."), eq("password_title"));
+  }
+
+  /**
+   * Pull configuration on late field definitions
+   */
   @Test
   public void pullConfigLate() throws EtcdAuthenticationException, TimeoutException, EtcdException, IOException {
     cCentral.addField("key", "title", "desc", "def");

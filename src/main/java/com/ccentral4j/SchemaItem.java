@@ -14,9 +14,13 @@ class SchemaItem {
   public String configValue;
 
   public enum Type {
-    STRING("string"), PASSWORD("password"), INTEGER("integer"), FLOAT("float"), LIST("list"), BOOLEAN("boolean");
-
-    private final String value;
+    STRING("string"),
+    PASSWORD("password"),
+    INTEGER("integer"),
+    FLOAT("float"),
+    LIST("list"),
+    BOOLEAN("boolean");
+    public final String value;
 
     Type(String type) {
       value = type;
