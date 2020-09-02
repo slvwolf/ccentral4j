@@ -10,6 +10,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.time.Clock;
@@ -24,8 +25,11 @@ import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.mockito.Mockito.*;
-import org.slf4j.Logger;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class CCentralTest {
   private static final ObjectMapper MAPPER = new ObjectMapper();
@@ -158,7 +162,7 @@ public class CCentralTest {
     cCentral.addHistogram("latency", 10);
     cCentral.addHistogram("latency", 12);
     cCentral.addHistogram("latency", 7);
-    ((CCEtcdClient) cCentral).setClock(Clock.offset(((CCEtcdClient) cCentral).getClock(), Duration.ofMinutes(1)));
+    cCentral.setClock(Clock.offset(cCentral.getClock(), Duration.ofMinutes(1)));
     cCentral.refresh();
     ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
     verify(client, times(2)).sendClientInfo(captor.capture());

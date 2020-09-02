@@ -14,4 +14,5 @@ public class CCentral {
   public static CCClient initWithEtcdHost(String serviceId, URI[] hosts) {
     return new CCEtcdClient(serviceId, hosts);
   }
+
 }

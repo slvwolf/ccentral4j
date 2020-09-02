@@ -1,7 +1,9 @@
-# ccentral4j
-Java client library for CCentral
+# CCentral
+Java client library for CCentral (Simple centralized configuration management and real-time monitoring for services).
+Server implementation can be found from [here](https://github.com/slvwolf/ccentral).
 
-## Development 
+## Packages
 
-* Use Google checkstyle configuration (https://raw.githubusercontent.com/checkstyle/checkstyle/master/src/main/resources/google_checks.xml)
-
+- `ccentral-all` - Everything included
+- `ccentral-common` - Basic interfaces, no connector implementations
+- `ccentral-etcd` - Etcd CCentral connector

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>ccentral-parent</artifactId>
+        <groupId>com.ccentral4j</groupId>
+        <version>0.4.2</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>ccentral-all</artifactId>
+    <name>CCentral - All</name>
+
+    <packaging>jar</packaging>
+
+
+    <dependencies>
+        <dependency>
+            <groupId>com.ccentral4j</groupId>
+            <artifactId>ccentral-common</artifactId>
+            <version>0.4.2</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.ccentral4j</groupId>
+            <artifactId>ccentral-etcd</artifactId>
+            <version>0.4.2</version>
+            <scope>compile</scope>
+        </dependency>
+    </dependencies>
+
+</project>
