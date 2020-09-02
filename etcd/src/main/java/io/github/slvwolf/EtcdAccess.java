@@ -1,4 +1,4 @@
-package com.ccentral4j;
+package io.github.slvwolf;
 
 import mousio.etcd4j.EtcdClient;
 import mousio.etcd4j.responses.EtcdAuthenticationException;

@@ -3,7 +3,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.ccentral4j</groupId>
+    <groupId>io.github.slvwolf</groupId>
     <artifactId>ccentral-parent</artifactId>
     <!-- Remember to increment version number in class as well -->
     <version>0.4.2</version>

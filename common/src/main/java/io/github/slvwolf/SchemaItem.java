@@ -1,4 +1,4 @@
-package com.ccentral4j;
+package io.github.slvwolf;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;

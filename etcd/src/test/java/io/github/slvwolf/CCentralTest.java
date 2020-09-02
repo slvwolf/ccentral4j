@@ -1,4 +1,4 @@
-package com.ccentral4j;
+package io.github.slvwolf;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;

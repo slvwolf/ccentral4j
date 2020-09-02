@@ -1,4 +1,4 @@
-package com.ccentral4j;
+package io.github.slvwolf;
 
 import com.codahale.metrics.ExponentiallyDecayingReservoir;
 import com.codahale.metrics.Histogram;
