@@ -22,8 +22,9 @@ import java.util.UUID;
 
 class CCEtcdClient implements CCClient {
 
-  private static final String CLIENT_VERSION = "java-0.4.2";
-  private static final int CHECK_INTERVAL = 40;
+  private static final String CLIENT_VERSION = "java_etcd-0.5.0";
+  private static final int METRIC_INTERVAL = 40;
+  private int configCheckInterval = 40;
   private static final ObjectMapper MAPPER = new ObjectMapper();
   private static final String API_VERSION = "1";
   private static Logger LOG = LoggerFactory.getLogger(CCEtcdClient.class);
@@ -35,7 +36,8 @@ class CCEtcdClient implements CCClient {
   private HashMap<String, Counter> counters;
   private HashMap<String, Histogram> histograms;
   private String clientId;
-  private long lastCheck;
+  private long lastConfigCheck;
+  private long lastMetricUpload;
 
   public CCEtcdClient(EtcdAccess client) {
     try {
@@ -85,6 +87,15 @@ class CCEtcdClient implements CCClient {
   }
 
   @Override
+  public void addCallback(String configuration, ConfigUpdate func) throws UnknownConfigException {
+    SchemaItem item = schema.get(configuration);
+    if (item == null) {
+      throw new UnknownConfigException("Configuration option for '" + configuration + "' is missing");
+    }
+    item.addCallback(func);
+  }
+
+  @Override
   public String getClientId() {
     return clientId;
   }
@@ -105,7 +116,8 @@ class CCEtcdClient implements CCClient {
     histograms = new HashMap<>();
     clientData = new HashMap<>();
     addIntField("v", "Version", "Schema version for tracking instances", 0);
-    lastCheck = 0;
+    lastConfigCheck = 0;
+    lastMetricUpload = 0;
   }
 
   @Override
@@ -168,7 +180,7 @@ class CCEtcdClient implements CCClient {
   private void addFieldType(String key, String title, String description, String defaultValue, SchemaItem.Type type) {
     key = filterKey(key);
     schema.put(key, new SchemaItem(key, title, description, defaultValue, type));
-    if (lastCheck > 0) {
+    if (lastConfigCheck > 0) {
       LOG.warn("Schema was updated after refresh. This might result in some abnormal behavior on "
               + "administration UI and degrades the performance. Before setting any stats or instance "
               + "variables always make sure all configurations have been already defined. As a remedy "
@@ -184,7 +196,7 @@ class CCEtcdClient implements CCClient {
     key = filterKey(key);
     SchemaItem item = schema.get(key);
     if (item == null) {
-      throw new UnknownConfigException();
+      throw new UnknownConfigException(key);
     }
     if (item.configValue == null) {
       return item.defaultValue;
@@ -254,16 +266,20 @@ class CCEtcdClient implements CCClient {
 
   @Override
   public void refresh() {
-    if (lastCheck == 0) {
+    if (lastConfigCheck == 0) {
       LOG.info("First refresh, sending Schema");
       sendSchema();
       LOG.debug("Schema updated");
     }
-    if (lastCheck < (clock.millis() - CHECK_INTERVAL * 1000)) {
-      LOG.debug("Check interval triggered");
-      lastCheck = clock.millis();
-      sendClientData();
+    if (lastConfigCheck < (clock.millis() - configCheckInterval * 1000)) {
+      LOG.debug("Checking for new configuration");
+      lastConfigCheck = clock.millis();
       pullConfigData();
+    }
+    if (lastMetricUpload < (clock.millis() - METRIC_INTERVAL * 1000)) {
+      LOG.debug("Uploading metrics");
+      lastMetricUpload = clock.millis();
+      sendClientData();
     }
   }
 
@@ -329,6 +345,7 @@ class CCEtcdClient implements CCClient {
   private void pullConfigData() {
     try {
       LOG.info("Checking configuration changes");
+      List<Runnable> callbacks = new LinkedList<>();
       String data = client.fetchConfig();
       Map<String, Object> configMap = MAPPER.readValue(data, new TypeReference<Map<String, Object>>() {
       });
@@ -341,6 +358,7 @@ class CCEtcdClient implements CCClient {
         String newValue = ((HashMap<String, Object>) (entry.getValue())).get("value").toString();
         // Value changed
         if (schemaItem.configValue == null || !schemaItem.configValue.equals(newValue)) {
+          boolean isFirstUpdate = schemaItem.configValue == null;
           String oldValue = schemaItem.configValue == null ? schemaItem.defaultValue : schemaItem.configValue;
           schemaItem.configValue = newValue;
           if (schemaItem.type.equalsIgnoreCase(SchemaItem.Type.PASSWORD.value)) {
@@ -348,9 +366,21 @@ class CCEtcdClient implements CCClient {
           } else {
             LOG.info("Configuration value for {} changed ({} => {})", schemaItem.key, oldValue, newValue);
           }
+          if (!isFirstUpdate) {
+            for (ConfigUpdate callback : schemaItem.getCallbacks()) {
+              callbacks.add(() -> callback.valueChanged(schemaItem.key));
+            }
+          }
         }
       }
       LOG.debug("Configuration pulled successfully");
+      for (Runnable callback : callbacks) {
+        try {
+          callback.run();
+        } catch (Exception exception) {
+          LOG.warn("Configuration update threw unexpected exception", exception);
+        }
+      }
     } catch (Exception e) {
       LOG.error("Failed to pull configuration data: " + e.getMessage(), e);
     }
@@ -392,4 +422,12 @@ class CCEtcdClient implements CCClient {
     }
   }
 
+  /**
+   * Configuration pull interval, setting this to 0 will cause configuration to be fetched on every get call
+   *
+   * @param configCheckInterval Check interval in seconds
+   */
+  public void setConfigCheckInterval(int configCheckInterval) {
+    this.configCheckInterval = configCheckInterval;
+  }
 }

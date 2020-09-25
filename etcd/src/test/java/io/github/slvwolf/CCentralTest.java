@@ -9,6 +9,7 @@ import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.slf4j.Logger;
 
@@ -29,6 +30,7 @@ import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 public class CCentralTest {
@@ -98,6 +100,66 @@ public class CCentralTest {
     cCentral.addBooleanField("bool", "title", "description", false);
 
     assertThat("Result should be true", cCentral.getConfigBool("bool"), is(true));
+  }
+
+  /**
+   * Provided callback function is called back on configuration change
+   */
+  @Test
+  public void noCallbackOnFirstRun() throws Exception {
+    when(client.fetchConfig()).thenReturn("{\"bool\": {\"value\": \"1\"}}");
+    ConfigUpdate configUpdate = Mockito.mock(ConfigUpdate.class);
+    cCentral.setConfigCheckInterval(0);
+    cCentral.addBooleanField("bool", "title", "description", false);
+    cCentral.addCallback("bool", configUpdate);
+
+    cCentral.refresh();
+
+    verifyNoMoreInteractions(configUpdate);
+  }
+
+  /**
+   * Provided callback function is called back on configuration change
+   */
+  @Test
+  public void callback() throws Exception {
+    when(client.fetchConfig()).thenReturn("{\"bool\": {\"value\": \"1\"}}");
+    ConfigUpdate configUpdate = Mockito.mock(ConfigUpdate.class);
+    cCentral.setConfigCheckInterval(0);
+    cCentral.addBooleanField("bool", "title", "description", false);
+    cCentral.addCallback("bool", configUpdate);
+
+    cCentral.refresh();
+    when(client.fetchConfig()).thenReturn("{\"bool\": {\"value\": \"0\"}}");
+    cCentral.refresh();
+
+    verify(configUpdate).valueChanged(eq("bool"));
+  }
+
+  /**
+   * If configuration value has not changed, callback is not called
+   */
+  @Test
+  public void noCallback() throws Exception {
+    when(client.fetchConfig()).thenReturn("{\"bool\": {\"value\": \"1\"}}");
+    ConfigUpdate configUpdate = Mockito.mock(ConfigUpdate.class);
+    cCentral.setConfigCheckInterval(0);
+    cCentral.addBooleanField("bool", "title", "description", false);
+    cCentral.addCallback("bool", configUpdate);
+
+    cCentral.refresh();
+    when(client.fetchConfig()).thenReturn("{\"bool\": {\"value\": \"1\"}}");
+    cCentral.refresh();
+
+    verifyNoMoreInteractions(configUpdate);
+  }
+
+  /**
+   * Throw exception on addCallback if configuration option is missing
+   */
+  @Test(expected = UnknownConfigException.class)
+  public void testMethod() throws Exception {
+    cCentral.addCallback("bool", Mockito.mock(ConfigUpdate.class));
   }
 
   /**
