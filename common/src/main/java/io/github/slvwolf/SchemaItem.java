@@ -3,6 +3,9 @@ package io.github.slvwolf;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.LinkedList;
+import java.util.List;
+
 class SchemaItem {
   public String key;
   public String title;
@@ -12,6 +15,8 @@ class SchemaItem {
   public String type;
   @JsonIgnore
   public String configValue;
+  @JsonIgnore
+  private final List<ConfigUpdate> callbacks;
 
   public enum Type {
     STRING("string"),
@@ -34,8 +39,14 @@ class SchemaItem {
     this.defaultValue = defaultValue;
     this.type = type.value;
     configValue = null;
+    callbacks = new LinkedList<>();
   }
 
-  public SchemaItem() {
+  public void addCallback(ConfigUpdate func) {
+    callbacks.add(func);
+  }
+
+  public List<ConfigUpdate> getCallbacks() {
+    return callbacks;
   }
 }

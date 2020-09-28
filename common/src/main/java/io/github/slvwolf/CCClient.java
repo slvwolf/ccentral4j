@@ -143,13 +143,24 @@ public interface CCClient {
 
   /**
    * Reset instance counter to predefined value
-   * @param key Counter key
+   *
+   * @param key    Counter key
    * @param amount Value to set
    * @param groups Additional groups for this key
    */
-  void setInstanceCounter(String key, int amount, String ...groups);
+  void setInstanceCounter(String key, int amount, String... groups);
 
   void addHistogram(String key, long timeInMilliseconds);
 
   String getApiVersion();
+
+  /**
+   * Use callback function when given configuration option changes. This can be handy option in cases where
+   * configuration is usually set only once in init and needs new initialization when updated.
+   *
+   * @param configuration Key for configuration, has to be defined before called
+   * @param func          Called function
+   * @throws UnknownConfigException Configuration item missing
+   */
+  void addCallback(String configuration, ConfigUpdate func) throws UnknownConfigException;
 }
