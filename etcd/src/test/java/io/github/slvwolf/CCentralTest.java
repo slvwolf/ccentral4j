@@ -109,7 +109,7 @@ public class CCentralTest {
   public void noCallbackOnFirstRun() throws Exception {
     when(client.fetchConfig()).thenReturn("{\"bool\": {\"value\": \"1\"}}");
     ConfigUpdate configUpdate = Mockito.mock(ConfigUpdate.class);
-    cCentral.setConfigCheckInterval(0);
+    cCentral.setConfigCheckInterval(-1);
     cCentral.addBooleanField("bool", "title", "description", false);
     cCentral.addCallback("bool", configUpdate);
 
@@ -125,11 +125,12 @@ public class CCentralTest {
   public void callback() throws Exception {
     when(client.fetchConfig()).thenReturn("{\"bool\": {\"value\": \"1\"}}");
     ConfigUpdate configUpdate = Mockito.mock(ConfigUpdate.class);
-    cCentral.setConfigCheckInterval(0);
+    cCentral.setConfigCheckInterval(-1);
     cCentral.addBooleanField("bool", "title", "description", false);
     cCentral.addCallback("bool", configUpdate);
 
     cCentral.refresh();
+    reset(client);
     when(client.fetchConfig()).thenReturn("{\"bool\": {\"value\": \"0\"}}");
     cCentral.refresh();
 
@@ -143,7 +144,7 @@ public class CCentralTest {
   public void noCallback() throws Exception {
     when(client.fetchConfig()).thenReturn("{\"bool\": {\"value\": \"1\"}}");
     ConfigUpdate configUpdate = Mockito.mock(ConfigUpdate.class);
-    cCentral.setConfigCheckInterval(0);
+    cCentral.setConfigCheckInterval(-1);
     cCentral.addBooleanField("bool", "title", "description", false);
     cCentral.addCallback("bool", configUpdate);
 
