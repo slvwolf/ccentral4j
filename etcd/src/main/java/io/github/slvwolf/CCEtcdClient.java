@@ -22,7 +22,7 @@ import java.util.UUID;
 
 public class CCEtcdClient implements CCClient {
 
-  private static final String CLIENT_VERSION = "java_etcd-0.5.0";
+  private static final String CLIENT_VERSION = "java_etcd-0.5.1";
   private static final int METRIC_INTERVAL = 40;
   private int configCheckInterval = 40;
   private static final ObjectMapper MAPPER = new ObjectMapper();
