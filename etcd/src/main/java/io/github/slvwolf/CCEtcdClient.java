@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-class CCEtcdClient implements CCClient {
+public class CCEtcdClient implements CCClient {
 
   private static final String CLIENT_VERSION = "java_etcd-0.5.0";
   private static final int METRIC_INTERVAL = 40;
@@ -73,11 +73,11 @@ class CCEtcdClient implements CCClient {
     CCEtcdClient.LOG = logger;
   }
 
-  Clock getClock() {
+  public Clock getClock() {
     return clock;
   }
 
-  void setClock(Clock clock) {
+  public void setClock(Clock clock) {
     this.clock = clock;
   }
 
