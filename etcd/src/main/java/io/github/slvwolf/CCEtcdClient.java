@@ -22,7 +22,7 @@ import java.util.UUID;
 
 class CCEtcdClient implements CCClient {
 
-  private static final String CLIENT_VERSION = "java_etcd-0.5.0";
+  private static final String CLIENT_VERSION = "java_etcd-0.5.1";
   private static final int METRIC_INTERVAL = 40;
   private int configCheckInterval = 40;
   private static final ObjectMapper MAPPER = new ObjectMapper();
@@ -145,7 +145,7 @@ class CCEtcdClient implements CCClient {
     try {
       addFieldType(key, title, description, MAPPER.writeValueAsString(defaultValue), SchemaItem.Type.LIST);
     } catch (JsonProcessingException e) {
-      LOG.error("Could not register list type: ", e);
+      LOG.error("Could not register list type for key {}: ", key, e);
     }
   }
 
@@ -170,9 +170,9 @@ class CCEtcdClient implements CCClient {
       return MAPPER.readValue(value, new TypeReference<List<String>>() {
       });
     } catch (JsonParseException e) {
-      LOG.warn("Could not parse configuration value. Value needs to be a valid json list of strings.");
+      LOG.warn("Could not parse value of configuration key '{}'. Value needs to be a valid json list of strings.", key);
     } catch (IOException e) {
-      LOG.warn("Could not parse configuration value.", e);
+      LOG.warn("Could not parse value of configuration key '{}'.", key, e);
     }
     return null;
   }
