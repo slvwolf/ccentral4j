@@ -8,6 +8,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import mousio.etcd4j.EtcdClient;
+import mousio.etcd4j.transport.EtcdNettyClient;
+import mousio.etcd4j.transport.EtcdNettyConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,7 +24,7 @@ import java.util.UUID;
 
 public class CCEtcdClient implements CCClient {
 
-  private static final String CLIENT_VERSION = "java_etcd-0.5.1";
+  private static final String CLIENT_VERSION = "java_etcd-0.5.2";
   private static final int METRIC_INTERVAL = 40;
   private int configCheckInterval = 40;
   private static final ObjectMapper MAPPER = new ObjectMapper();
@@ -38,6 +40,7 @@ public class CCEtcdClient implements CCClient {
   private String clientId;
   private long lastConfigCheck;
   private long lastMetricUpload;
+  private static int ETCDmaxFrameSize = 1024 * 200;
 
   public CCEtcdClient(EtcdAccess client) {
     try {
@@ -60,7 +63,9 @@ public class CCEtcdClient implements CCClient {
       LOG.info("Creating ETCD connection: {}", host.toASCIIString());
     }
     try {
-      EtcdClient cli = new EtcdClient(hosts);
+      EtcdNettyConfig config = new EtcdNettyConfig()
+          .setMaxFrameSize(ETCDmaxFrameSize);
+      EtcdClient cli = new EtcdClient(new EtcdNettyClient(config, hosts));
       init();
       this.client = new EtcdAccess(cli, serviceId, this.getClientId());
     } catch (Throwable e) {
